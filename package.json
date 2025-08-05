@@ -28,8 +28,6 @@
     "serverless-http": "^3.2.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22",
-    "serverless": "^3.32.2",
-    "serverless-offline": "^14.4.0"
+    "nodemon": "^2.0.22"
   }
 }
