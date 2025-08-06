@@ -37,4 +37,17 @@ exports.enrollUserInCourse = async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-};
+ };
+
+  exports.getSdkUrl = async (req, res, next) => {
+    try {
+      const result = await doceboService.getSdkUrl();
+      res.status(200).json({
+        status: 'success',
+        data: result
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+

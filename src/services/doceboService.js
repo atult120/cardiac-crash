@@ -159,6 +159,7 @@ class DoceboService {
           'Authorization': `Bearer ${token}`
         }
       };
+      console.log('config',config);
       
       // Add data or params if provided
       if (data) config.data = data;
@@ -239,7 +240,7 @@ const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress'
   }
 
   async getCourseById(courseId) {
-    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}`);
+    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}`);   
   }
 
   async enrollUserInCourse(enrollmentData) {
@@ -254,6 +255,11 @@ const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress'
       refresh_token: refreshToken,
       scope: 'api',
     });
+  }
+
+  async getSdkUrl() {
+    const resp = await this.makeAuthenticatedRequest('get', '/setup/v1/flow/settings');
+    return resp.data;
   }
 }
 
