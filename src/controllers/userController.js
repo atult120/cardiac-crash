@@ -15,7 +15,19 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.createUser = async (req, res, next) => {
   try {
-    const result = await doceboService.createUser(req.body);
+    // Generate a random unique ID for the user
+    const uniqueId = `${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    
+    // Validate role (must be either 'tutor' or 'corporate')
+    const role = req.body.role?.toLowerCase();
+    
+    const userData = {
+      ...req.body,
+      userid: uniqueId,
+      // level: role === 'tutor' ? 7 : 6,
+    };
+    
+    const result = await doceboService.createUser(userData);
     res.status(201).json({
       status: 'success',
       data: result

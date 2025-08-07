@@ -209,7 +209,6 @@ class DoceboService {
 
     const enrolledList = visibleEnrollments || [];
     const enrolledMap = new Map(enrolledList.map(e => [e.uidCourse, e]));
-    console.log('visibleCourses',visibleCourses);
     const enrolledCourses = visibleCourses
       .filter(course => enrolledMap.has(course.uidCourse))
       .map(course => {
@@ -224,23 +223,23 @@ class DoceboService {
         };
       });
 
-      // 📊 Calculate summary stats
-const total_courses = enrolledCourses.length;
-const total_completed = enrolledCourses.filter(c => c.completed_on !== null).length;
-const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress').length;
+    // 📊 Calculate summary stats
+    const total_courses = enrolledCourses.length;
+    const total_completed = enrolledCourses.filter(c => c.completed_on !== null).length;
+    const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress').length;
 
-  return {
-    courses: enrolledCourses,
-    summary: {
-      total_courses,
-      total_completed,
-      total_in_progress,
-    }
-};
+      return {
+        courses: enrolledCourses,
+        summary: {
+          total_courses,
+          total_completed,
+          total_in_progress,
+        }
+    };
   }
 
-  async getCourseById(courseId) {
-    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}`);   
+  async getCourseById(courseId , token) {
+    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}` , null , null , token);   
   }
 
   async enrollUserInCourse(enrollmentData) {
@@ -259,6 +258,11 @@ const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress'
 
   async getSdkUrl() {
     const resp = await this.makeAuthenticatedRequest('get', '/setup/v1/flow/settings');
+    return resp.data;
+  }
+
+  async getCourseDownloadUrl(courseId) {
+    const resp = await this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}/los`);
     return resp.data;
   }
 }

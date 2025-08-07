@@ -17,7 +17,8 @@ exports.getCourses = async (req, res, next) => {
 exports.getCourseById = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const result = await doceboService.getCourseById(id);
+    const token = req.headers.authorization?.split(' ')[1];
+    const result = await doceboService.getCourseById(id , token);
     res.status(200).json({
       status: 'success',
       data: result
