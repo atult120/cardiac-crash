@@ -225,7 +225,7 @@ class DoceboService {
 
     // 📊 Calculate summary stats
     const total_courses = enrolledCourses.length;
-    const total_completed = enrolledCourses.filter(c => c.completed_on !== null).length;
+    const total_completed = enrolledCourses.filter(c => c.completed_on === 'completed').length;
     const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress').length;
 
       return {
