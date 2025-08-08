@@ -23,15 +23,7 @@ exports.createUser = async (req, res, next) => {
     const userData = {
       ...req.body,
       userid: req.body.username,
-      additional_fields: {
-        __first_additional_field_id__: 1,
-        __second_additional_field_id__: "Test",
-        __third_additional_field_id__: "Tutor"
-      }
     };
-
-    console.log(userData);
-    return;
     
     const result = await doceboService.createUser(userData);
     res.status(201).json({

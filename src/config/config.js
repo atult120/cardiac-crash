@@ -1,6 +1,4 @@
 require('dotenv').config();
-console.log('DOCEBO_BASE_URL:', process.env.DOCEBO_BASE_URL);
-console.log('DOCEBO_ACCESS_TOKEN:', process.env.DOCEBO_ACCESS_TOKEN);
 module.exports = {
   docebo: {
     baseUrl: process.env.DOCEBO_BASE_URL,
