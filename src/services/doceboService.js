@@ -158,9 +158,7 @@ class DoceboService {
         headers: {
           'Authorization': `Bearer ${token}`
         }
-      };
-      console.log('config',config);
-      
+      };      
       // Add data or params if provided
       if (data) config.data = data;
       if (params) config.params = params;
@@ -225,7 +223,7 @@ class DoceboService {
 
     // 📊 Calculate summary stats
     const total_courses = enrolledCourses.length;
-    const total_completed = enrolledCourses.filter(c => c.completed_on === 'completed').length;
+    const total_completed = enrolledCourses.filter(c => c.status === 'completed').length;
     const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress').length;
 
       return {
