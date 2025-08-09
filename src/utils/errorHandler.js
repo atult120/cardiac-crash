@@ -20,8 +20,7 @@ const handleError = (err, req, res, next) => {
   // Ensure message is a string
   const message = typeof err.message === 'object' ? 
     JSON.stringify(err.message) : String(err.message);
-  
-  console.log(err);
+
   res.status(err.statusCode).json({
     status: err.status,
     message: message,

@@ -18,11 +18,14 @@ exports.createUser = async (req, res, next) => {
     // Generate a random unique ID for the user
     
     // Validate role (must be either 'tutor' or 'corporate')
-    const role = req.body.role?.toLowerCase();
+    const role = req.body.role?.toUpperCase();
     
     const userData = {
       ...req.body,
       userid: req.body.username,
+       additional_fields: {
+        "4": role
+     }
     };
     
     const result = await doceboService.createUser(userData);
