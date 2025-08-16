@@ -9,5 +9,12 @@ module.exports = {
     username: process.env.DOCEBO_USERNAME,
     password: process.env.DOCEBO_PASSWORD,
   },
+  db : {
+    db_path : process.env.DB_FILE || './data.sqlite'
+  },
+  calcom : {
+    baseUrl : process.env.CAL_BASE_URL,
+    apiKey : process.env.CAL_API_KEY
+  },
   port: process.env.PORT || 3000
 };

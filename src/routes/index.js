@@ -3,6 +3,8 @@ const userRoutes = require('./userRoutes');
 const courseRoutes = require('./courseRoutes');
 const analyticsRoutes = require('./analyticsRoutes');
 const healthRoutes = require('./healthRoutes');
+const sessionRoute = require('./session');
+
 
 const router = express.Router();
 
@@ -11,5 +13,6 @@ router.use('/api/users', userRoutes);
 router.use('/api/courses', courseRoutes);
 router.use('/api/analytics', analyticsRoutes);
 router.use('/health', healthRoutes);
+router.use('/sessions' , sessionRoute)
 
 module.exports = router;
