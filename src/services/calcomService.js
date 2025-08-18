@@ -162,8 +162,6 @@ class CalcomService {
     if (!session) {
       throw new Error("Session not found");
     }
-
-    console.log('session',session);
   
     const eventTypePayload = {};
     if (updates.title) eventTypePayload.title = updates.title;
@@ -182,6 +180,7 @@ class CalcomService {
     updates.duration = updates.length;
     updates.start_date = updates.startDate;
     updates.end_date = updates.endDate;
+    delete updates.user_id;
     delete updates.length;
     delete updates.startDate;
     delete updates.endDate;
