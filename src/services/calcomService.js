@@ -64,8 +64,8 @@ class CalcomService {
         startDate: slot.startDate,
         endDate: slot.endDate,
         days: [1, 2, 3, 4, 5], // optional: derive actual day from slot if needed
-        startTime: "09:00",
-        endTime: "18:00"
+        startTime: slot.startTime,
+        endTime: slot.endTime
       })),
       timeZone: "Asia/Kolkata",
       isDefault: false
