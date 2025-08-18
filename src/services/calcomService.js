@@ -183,10 +183,15 @@ class CalcomService {
     updates.duration = updates.length;
     updates.start_date = updates.startDate;
     updates.end_date = updates.endDate;
+    updates.start_time = updates.startTime;
+    updates.end_time = updates.endTime;
     delete updates.user_id;
     delete updates.length;
     delete updates.startDate;
     delete updates.endDate;
+    delete updates.startTime;
+    delete updates.endTime;
+    delete updates.slots;
   
     await db("sessions").where({ id }).update(updates);
   
