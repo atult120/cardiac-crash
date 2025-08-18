@@ -125,7 +125,32 @@ class CalcomService {
   // 📌 Session Management
   // ------------------
   async getSessions(userId) {
-    return db('sessions').where({ docebo_user_id: userId }).select('*');
+    // 1. Get sessions from DB
+    const sessions = await db("sessions")
+      .where({ docebo_user_id: userId })
+      .select("*");
+  
+    if (sessions.length === 0) return [];
+  
+    const eventTypeIds = sessions.map(s => s.cal_event_type_id).join(",");
+  
+    const bookingsRes = await this.makeAuthenticatedRequest(
+      "get",
+      `/v2/bookings?take=100&eventTypeIds=${encodeURIComponent(eventTypeIds)}`
+    );
+  
+    const bookings = bookingsRes.data.bookings;
+  
+    const bookingCounts = bookings.reduce((acc, b) => {
+      const attendeeCount = b.attendees ? b.attendees.length : 0;
+      acc[b.eventTypeId] = (acc[b.eventTypeId] || 0) + attendeeCount;
+      return acc;
+    }, {});
+  
+    return sessions.map(session => ({
+      ...session,
+      total_participants: bookingCounts[session.cal_event_type_id] || 0
+    }));
   }
 
   async getSessionById(id) {
