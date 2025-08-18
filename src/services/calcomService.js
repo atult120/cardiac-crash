@@ -171,7 +171,7 @@ class CalcomService {
     if (updates.title) eventTypePayload.title = updates.title;
     if (updates.description) eventTypePayload.description = updates.description;
     if (updates.length) eventTypePayload.lengthInMinutes = updates.length;
-    if (updates.slug) eventTypePayload.slug = updates.slug;
+    if (updates.slug) eventTypePayload.slug = session.slug;
   
     if (Object.keys(eventTypePayload).length > 0) {
       await this.makeAuthenticatedRequest(
