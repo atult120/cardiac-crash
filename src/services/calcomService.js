@@ -35,16 +35,15 @@ class CalcomService {
 
   async makeAuthenticatedRequest(method, url, data = null, params = null) {
     const token = config.calcom.apiKey;
-    console.log('token',token);
     
     const requestConfig = {
       method,
       url,
-      headers: { Authorization: `Bearer ${token}` },
-      'cal-api-version': "2024-06-14"
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "cal-api-version": "2024-06-14"
+      }
     };
-
-    console.log('requestConfig',requestConfig);
     
     if (data) requestConfig.data = data;
     if (params) requestConfig.params = params;
@@ -235,18 +234,33 @@ class CalcomService {
 
     const eventTypeId = session.cal_event_type_id;
 
-    const res = await this.makeAuthenticatedRequest(
-      "get",
-      `/v2/bookings?eventTypeId=${eventTypeId}`
-    );
+    // const res = await this.makeAuthenticatedRequest(
+    //   "get",
+    //   `/v2/bookings?take=100&eventTypeId=${eventTypeId}`
+    // );
+    // console.log("EventTypeId used:", eventTypeId);
+    // console.log("Raw API response:", JSON.stringify(res.data, null, 2));
 
+    const url = `${config.calcom.baseUrl}/v2/bookings?take=100&eventTypeId=${eventTypeId}`;
+
+    const options = {
+      method: "GET",
+      url,
+      headers: {
+        Authorization: config.calcom.apiKey,
+        "cal-api-version": "2024-08-13",
+      },
+    };
+
+    const res = await axios(options);
     const participants = [];
-    for (const booking of res.data.bookings) {
-      if (booking.attendees && booking.attendees.length > 0) {
-        participants.push(...booking.attendees);
+    if(res.data.bookings){
+      for (const booking of res.data.bookings) {
+        if (booking.attendees && booking.attendees.length > 0) {
+          participants.push(...booking.attendees);
+        }
       }
     }
-
     return participants;
   }
 
