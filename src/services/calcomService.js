@@ -62,7 +62,7 @@ class CalcomService {
       availability: slots.map(slot => ({
         startDate: slot.startDate,
         endDate: slot.endDate,
-        days: [1, 2, 3, 4, 5], // or derive from slot if you want
+        days: ["Monday","Tuesday","Wednesday","Thursday","Friday"],
         startTime: slot.startTime,
         endTime: slot.endTime
       })),
@@ -82,7 +82,7 @@ class CalcomService {
       title,
       slug: generateSlug(slug || title),
       description,
-      length, // duration in minutes
+      lengthInMinutes: length,
       scheduleId
     };
   
@@ -170,7 +170,7 @@ class CalcomService {
     const eventTypePayload = {};
     if (updates.title) eventTypePayload.title = updates.title;
     if (updates.description) eventTypePayload.description = updates.description;
-    if (updates.length) eventTypePayload.length = updates.length;
+    if (updates.length) eventTypePayload.lengthInMinutes = updates.length;
     if (updates.slug) eventTypePayload.slug = updates.slug;
   
     if (Object.keys(eventTypePayload).length > 0) {
