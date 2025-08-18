@@ -55,80 +55,70 @@ class CalcomService {
   // 📌 Bulk Create Sessions
   // ------------------
   async createSessions(body) {
-    const results = [];
-    const sessionsData = body.sessions;
-    const userId = body.user_id;
+    const { user_id, title, description, slug, length, slots } = body;
   
-    for (const session of sessionsData) {
-      // 1. Create Schedule
-      const schedulePayload = {
-        name: `${session.title} Schedule`,
-        availability: [
-          {
-            startDate: session.startDate,
-            endDate: session.endDate,
-            days: [1, 2, 3, 4, 5], // Mon-Fri default
-            startTime: "09:00",
-            endTime: "18:00"
-          }
-        ],
-        timeZone: "Asia/Kolkata",
-        isDefault: false
-      };
+    // 1. Create Schedule with all slots as availability blocks
+    const schedulePayload = {
+      name: `${title} Schedule`,
+      availability: slots.map(slot => ({
+        startDate: slot.startDate,
+        endDate: slot.endDate,
+        days: [1, 2, 3, 4, 5], // optional: derive actual day from slot if needed
+        startTime: "09:00",
+        endTime: "18:00"
+      })),
+      timeZone: "Asia/Kolkata",
+      isDefault: false
+    };
   
-      const scheduleRes = await this.makeAuthenticatedRequest(
-        'post',
-        `/v2/schedules`,
-        schedulePayload
-      );
+    const scheduleRes = await this.makeAuthenticatedRequest(
+      "post",
+      `/v2/schedules`,
+      schedulePayload
+    );
   
-      const scheduleId = scheduleRes.data.id;
+    const scheduleId = scheduleRes.data.id;
   
-      // 2. Create Event Type
-      const eventTypePayload = {
-        title: session.title,
-        slug: generateSlug(session.title),
-        description: session.description,
-        length: session.length,
-        scheduleId: scheduleId
-      };
+    // 2. Create one Event Type
+    const eventTypePayload = {
+      title,
+      slug: generateSlug(slug || title),
+      description,
+      length, // duration in minutes
+      scheduleId
+    };
   
-      const eventTypeRes = await this.makeAuthenticatedRequest(
-        'post',
-        `/v2/event-types`,
-        eventTypePayload
-      );
+    const eventTypeRes = await this.makeAuthenticatedRequest(
+      "post",
+      `/v2/event-types`,
+      eventTypePayload
+    );
   
-      const eventType = eventTypeRes.data;
-
-
-      const username = 'atul-tiwari-lvo2sr';
+    const eventType = eventTypeRes.data;
   
-      const bookingUrl = `https://cal.com/${username}/${eventType.slug}`;
-
+    // 3. Build booking URL
+    const username = "atul-tiwari-lvo2sr"; // can be dynamic per user
+    const bookingUrl = `https://cal.com/${username}/${eventType.slug}`;
   
-      // 4. Save into merged "events" table
-      await db("sessions").insert({
-        title: session.title,
-        slug: eventType.slug,
-        description: session.description,
-        start_date: session.startDate,
-        end_date: session.endDate,
-        cal_event_type_id: eventType.id,
-        duration: session.length,
-        docebo_user_id: userId,
-        username: username,
-        booking_url: bookingUrl,
-      });
+    // 4. Save into DB
+    await db("sessions").insert({
+      title,
+      slug: eventType.slug,
+      description,
+      start_date: slots[0].startDate,
+      end_date: slots[slots.length - 1].endDate,
+      cal_event_type_id: eventType.id,
+      duration: length,
+      docebo_user_id: user_id,
+      username,
+      booking_url: bookingUrl
+    });
   
-      // push both eventType + booking info
-      results.push({
-        ...eventType,
-        booking_url: bookingUrl,
-      });
-    }
-  
-    return results;
+    return {
+      ...eventType,
+      booking_url: bookingUrl,
+      slots
+    };
   }
 
   // ------------------
