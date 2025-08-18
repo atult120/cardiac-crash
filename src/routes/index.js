@@ -13,6 +13,6 @@ router.use('/api/users', userRoutes);
 router.use('/api/courses', courseRoutes);
 router.use('/api/analytics', analyticsRoutes);
 router.use('/health', healthRoutes);
-router.use('/sessions' , sessionRoute)
+router.use('/api/sessions' , sessionRoute)
 
 module.exports = router;
