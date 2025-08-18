@@ -144,10 +144,12 @@ class CalcomService {
     const bookings = bookingsRes.data.bookings;
   
     const bookingCounts = bookings.reduce((acc, b) => {
-      const attendeeCount = b.attendees ? b.attendees.length : 0;
-      acc[b.eventTypeId] = (acc[b.eventTypeId] || 0) + attendeeCount;
+      const attendeeCount = b.attendees ? b.attendees.length : 0;      
+      acc[b.eventType.id] = (acc[b.eventType.id] || 0) + attendeeCount;
       return acc;
     }, {});
+
+    
   
     return sessions.map(session => ({
       ...session,
