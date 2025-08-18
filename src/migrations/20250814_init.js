@@ -13,6 +13,8 @@ async function up(knex) {
       t.string('username').nullable();
       t.timestamp('start_date').nullable();
       t.timestamp('end_date').nullable();
+      t.timestamp('start_time').nullable();
+      t.timestamp('end_time').nullable();
       t.timestamps(true, true);
     })
 }

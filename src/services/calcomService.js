@@ -63,7 +63,7 @@ class CalcomService {
       availability: slots.map(slot => ({
         startDate: slot.startDate,
         endDate: slot.endDate,
-        days: [1, 2, 3, 4, 5], // optional: derive actual day from slot if needed
+        days: [1, 2, 3, 4, 5], // or derive from slot if you want
         startTime: slot.startTime,
         endTime: slot.endTime
       })),
@@ -76,10 +76,9 @@ class CalcomService {
       `/v2/schedules`,
       schedulePayload
     );
-  
     const scheduleId = scheduleRes.data.id;
   
-    // 2. Create one Event Type
+    // 2. Create Event Type (one for all slots)
     const eventTypePayload = {
       title,
       slug: generateSlug(slug || title),
@@ -93,26 +92,29 @@ class CalcomService {
       `/v2/event-types`,
       eventTypePayload
     );
-  
     const eventType = eventTypeRes.data;
   
     // 3. Build booking URL
-    const username = "atul-tiwari-lvo2sr"; // can be dynamic per user
+    const username = "atul-tiwari-lvo2sr"; // TODO: make dynamic per user
     const bookingUrl = `https://cal.com/${username}/${eventType.slug}`;
   
-    // 4. Save into DB
-    await db("sessions").insert({
+    // 4. Insert multiple session rows in DB (one per slot)
+    const sessionRecords = slots.map(slot => ({
       title,
       slug: eventType.slug,
       description,
-      start_date: slots[0].startDate,
-      end_date: slots[slots.length - 1].endDate,
+      start_date: slot.startDate,
+      end_date: slot.endDate,
+      start_time: slot.startTime,
+      end_time: slot.endTime,
       cal_event_type_id: eventType.id,
       duration: length,
       docebo_user_id: user_id,
       username,
       booking_url: bookingUrl
-    });
+    }));
+  
+    await db("sessions").insert(sessionRecords);
   
     return {
       ...eventType,
@@ -149,7 +151,8 @@ class CalcomService {
   
     return sessions.map(session => ({
       ...session,
-      total_participants: bookingCounts[session.cal_event_type_id] || 0
+      total_participants: bookingCounts[session.cal_event_type_id] || 0,
+      status: getSessionStatus(session)
     }));
   }
 
@@ -255,5 +258,16 @@ function generateSlug(title) {
     .replace(/(^-|-$)+/g, '') 
     + '-' + Date.now();            
 }
+
+function getSessionStatus(session) {
+  const now = new Date();
+  const start = new Date(session.start_date);
+  const end = new Date(session.end_date);
+
+  if (now < start) return "upcoming";
+  if (now >= start && now <= end) return "ongoing";
+  return "completed";
+}
+
 
 module.exports = new CalcomService();
