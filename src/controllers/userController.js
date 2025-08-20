@@ -24,7 +24,7 @@ exports.createUser = async (req, res, next) => {
 
     const userData = {
       ...req.body,
-      userid: req.body.username,
+      userid: req.body.email,
        additional_fields: {
         "4": role
      }
