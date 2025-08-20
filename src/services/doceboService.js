@@ -237,7 +237,7 @@ class DoceboService {
   }
 
   async getCourseById(courseId , token) {
-    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}` , null);   
+    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}` , null , null ,token);   
   }
 
   async enrollUserInCourse(enrollmentData) {
