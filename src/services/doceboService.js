@@ -119,7 +119,7 @@ class DoceboService {
       const userInfoRes = await axios.get(
         `${config.docebo.baseUrl}/api/manage/v1/user`,
         {
-          params: { search_text: username },
+          params: { search_text: encodeURIComponent(username) },
           headers: { Authorization: `Bearer ${adminAccessToken}` }
         }
       );
