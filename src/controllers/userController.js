@@ -1,5 +1,6 @@
 const doceboService = require('../services/doceboService');
 const { AppError } = require('../utils/errorHandler');
+const { capitalizeFirstLetter } = require('../utils/helper');
 
 exports.getAllUsers = async (req, res, next) => {
   try {
@@ -15,20 +16,34 @@ exports.getAllUsers = async (req, res, next) => {
 
 exports.createUser = async (req, res, next) => {
   try {
-    // Generate a random unique ID for the user
-    
-    // Validate role (must be either 'tutor' or 'corporate')
-    const role = req.body.role?.toUpperCase();
-    
+    const role = capitalizeFirstLetter(req.body.role);
+    const roleCourseMap = {
+      Educator: [183, 184],
+      Corporate: [185, 184]
+    };
+
     const userData = {
       ...req.body,
       userid: req.body.username,
        additional_fields: {
         "4": role
      }
-    };
-    
+    };    
+
     const result = await doceboService.createUser(userData);
+
+    const userId = result.data.user_id;
+    const courseIds = roleCourseMap[role] || [];
+
+    const enrollmentPayload = {
+      course_ids: courseIds,
+      user_ids: [userId],
+      level: "3",
+      assignment_type: "mandatory"
+    };
+
+    await doceboService.enrollUserInCourse(enrollmentPayload);
+
     res.status(201).json({
       status: 'success',
       data: result

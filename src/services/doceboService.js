@@ -178,7 +178,7 @@ class DoceboService {
   }
 
   async createUser(userData) {
-    return this.makeAuthenticatedRequest('post', '/manage/v1/user', userData);
+     return this.makeAuthenticatedRequest('post', '/manage/v1/user', userData);
   }
 
   async updateUser(userId, userData) {
@@ -237,7 +237,7 @@ class DoceboService {
   }
 
   async getCourseById(courseId , token) {
-    return this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}` , null , null , token);   
+    return this.makeAuthenticatedRequest('get', `/manage/v1/group` , null , null);   
   }
 
   async enrollUserInCourse(enrollmentData) {
