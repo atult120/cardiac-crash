@@ -53,31 +53,55 @@ class CalcomService {
   // ------------------
   // 📌 Bulk Create Sessions
   // ------------------
+  getWeekdaysBetween(startDateStr, endDateStr) {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const startDate = new Date(startDateStr);
+    const endDate = new Date(endDateStr);
+  
+    const weekdays = new Set();
+  
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      weekdays.add(days[d.getDay()]);
+    }
+  
+    return Array.from(weekdays);
+  }
+
   async createSessions(body) {
     const { user_id, title, description, slug, length, slots } = body;
-  
-    // 1. Create Schedule with all slots as availability blocks
+
+    // 1. Convert slots into availability blocks with weekdays
+    const availability = slots.map(slot => ({
+      days: this.getWeekdaysBetween(slot.startDate, slot.endDate),
+      startTime: slot.startTime,
+      endTime: slot.endTime
+    }));
+
+    const overrides = slots.map(slot => ({
+      date: slot.startDate,
+      startTime: slot.startTime,
+      endTime: slot.endTime
+    }));
+
+    // 2. Create schedule in Cal.com
     const schedulePayload = {
       name: `${title} Schedule`,
-      availability: slots.map(slot => ({
-        startDate: slot.startDate,
-        endDate: slot.endDate,
-        days: ["Monday","Tuesday","Wednesday","Thursday","Friday"],
-        startTime: slot.startTime,
-        endTime: slot.endTime
-      })),
+      availability,
+      overrides,
       timeZone: "Asia/Kolkata",
       isDefault: false
     };
-  
+
+    console.log("Schedule payload:", schedulePayload);
+
     const scheduleRes = await this.makeAuthenticatedRequest(
       "post",
-      `/v2/schedules`,
+      "/v2/schedules",
       schedulePayload
     );
     const scheduleId = scheduleRes.data.id;
-  
-    // 2. Create Event Type (one for all slots)
+
+    // 3. Create Event Type (single for all slots)
     const eventTypePayload = {
       title,
       slug: generateSlug(slug || title),
@@ -85,19 +109,19 @@ class CalcomService {
       lengthInMinutes: length,
       scheduleId
     };
-  
+
     const eventTypeRes = await this.makeAuthenticatedRequest(
       "post",
-      `/v2/event-types`,
+      "/v2/event-types",
       eventTypePayload
     );
     const eventType = eventTypeRes.data;
-  
-    // 3. Build booking URL
+
+    // 4. Build booking URL
     const username = "atul-tiwari-lvo2sr"; // TODO: make dynamic per user
     const bookingUrl = `https://cal.com/${username}/${eventType.slug}`;
-  
-    // 4. Insert multiple session rows in DB (one per slot)
+
+    // 5. Insert multiple session rows in DB (one per slot)
     const sessionRecords = slots.map(slot => ({
       title,
       slug: eventType.slug,
@@ -112,9 +136,9 @@ class CalcomService {
       username,
       booking_url: bookingUrl
     }));
-  
+
     await db("sessions").insert(sessionRecords);
-  
+
     return {
       ...eventType,
       booking_url: bookingUrl,
@@ -122,6 +146,87 @@ class CalcomService {
     };
   }
 
+  // async createSessions(body) {
+  //   const { user_id, title, description, slug, length, slots } = body;
+  
+  //   const eventTypePayload = {
+  //     owner: "https://api.calendly.com/users/1ee617bc-c1fe-4962-ae0e-6c55487954bd",
+  //     name: title,
+  //     duration: length,
+  //     description,
+  //     active: true
+  //   };
+  
+  //   const eventTypeRes = await axios.post(
+  //     "https://api.calendly.com/event_types",
+  //     eventTypePayload,
+  //     { headers: { Authorization: `Bearer ${config.calendely.apiKey}` } }
+  //   );
+  
+  //   const eventType = eventTypeRes.data.resource;
+  //   const uri = eventType.uri;
+  
+  //   const bookingUrl = eventType.scheduling_url;
+
+  //   const rules = body.slots.map(slot => ({
+  //     type: "date",
+  //     date: slot.startDate, // single-day restriction
+  //     intervals: [
+  //       { from: slot.startTime, to: slot.endTime }
+  //     ]
+  //   }));
+
+  //   console.log(rules)
+
+
+  //   const scheduleBody = {
+  //     availability_setting: "host",
+  //     availability_rule: {
+  //       timezone: "Asia/Kolkata",
+  //       rules: rules
+  //     }
+  //   };
+
+
+  //   // Send to Calendly
+  //   const response = await axios.patch(
+  //     `https://api.calendly.com/event_type_availability_schedules?event_type=${uri}`,
+  //     scheduleBody,
+  //     {
+  //       headers: {
+  //         Authorization: `Bearer ${config.calendely.apiKey}`,
+  //         "Content-Type": "application/json"
+  //       }
+  //     }
+  //   );
+  
+  //   const sessionRecords = [];
+  
+  //   for (const slot of slots) {
+  //     sessionRecords.push({
+  //       title,
+  //       slug: eventType.slug,
+  //       description,
+  //       start_date: slot.startDate,
+  //       end_date: slot.endDate,
+  //       start_time: slot.startTime,
+  //       end_time: slot.endTime,
+  //       cal_event_type_id: "12",
+  //       duration: length,
+  //       docebo_user_id: user_id,
+  //       username: 'ixltech.atul',
+  //       booking_url: bookingUrl
+  //     });
+  //   }
+  
+  //   await db("sessions").insert(sessionRecords);
+  
+  //   return {
+  //     ...eventType,
+  //     booking_url: bookingUrl,
+  //     slots
+  //   };
+  // }
   // ------------------
   // 📌 Session Management
   // ------------------
@@ -253,9 +358,12 @@ class CalcomService {
     };
 
     const res = await axios(options);
+
+    console.log(res.data.data);
+    const bookings = res.data.data;
     const participants = [];
-    if(res.data.bookings){
-      for (const booking of res.data.bookings) {
+    if(bookings){
+      for (const booking of bookings) {
         if (booking.attendees && booking.attendees.length > 0) {
           participants.push(...booking.attendees);
         }
