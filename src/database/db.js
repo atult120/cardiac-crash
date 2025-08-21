@@ -3,11 +3,14 @@ const path = require("path");
 const config = require("../config/config");
 
 const db = knex({
-  client: "sqlite3",
+  client: "mysql2",
   connection: {
-    filename: config.db.db_path
+    host : config.db.host,
+    user : config.db.user,
+    password : config.db.password,
+    database : config.db.database
   },
-  useNullAsDefault: true, // required for SQLite
+  useNullAsDefault: true,
   migrations: {
     directory: path.join(__dirname, "migrations"),
   },

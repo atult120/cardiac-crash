@@ -2,16 +2,16 @@ const config = require('./src/config/config');
 
 module.exports =  {
   development: {
-    client: 'sqlite3',
+    client: 'mysql2',
     connection: {
-      filename: config.db.db_path
+      host : config.db.host,
+      user : config.db.user,
+      password : config.db.password,
+      database : config.db.database
     },
     useNullAsDefault: true,
     migrations: {
       directory: './src/migrations'
-    },
-    pool: {
-      afterCreate: (conn, done) => conn.run('PRAGMA foreign_keys = ON', done)
     }
   }
 };

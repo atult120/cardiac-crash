@@ -10,11 +10,17 @@ module.exports = {
     password: process.env.DOCEBO_PASSWORD,
   },
   db : {
-    db_path : process.env.DB_FILE || './data.sqlite'
+    host : process.env.DB_HOST,
+    user : process.env.DB_USER,
+    password : process.env.DB_PASSWORD,
+    database : process.env.DB_DATABASE,
   },
   calcom : {
     baseUrl : process.env.CAL_BASE_URL,
     apiKey : process.env.CAL_API_KEY
   },
-  port: process.env.PORT || 3000
+  port: process.env.PORT || 3000,
+  calendely : {
+    apiKey : process.env.CALENDELY_API_KEY
+  }
 };
