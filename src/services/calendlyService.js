@@ -75,7 +75,7 @@ class CalendlyService {
     const eventTypePayload = {
       owner: "https://api.calendly.com/users/1ee617bc-c1fe-4962-ae0e-6c55487954bd",
       name: title,
-      duration: length,
+      duration: 60,
       description,
       active: true
     };
