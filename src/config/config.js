@@ -20,7 +20,8 @@ module.exports = {
     apiKey : process.env.CAL_API_KEY
   },
   port: process.env.PORT || 3000,
-  calendely : {
+  calendly : {
+    baseUrl : process.env.CALENDELY_BASE_URL,
     apiKey : process.env.CALENDELY_API_KEY
   }
 };
