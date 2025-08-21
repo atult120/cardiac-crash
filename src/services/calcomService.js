@@ -72,7 +72,7 @@ class CalcomService {
 
     // 1. Convert slots into availability blocks with weekdays
     const availability = slots.map(slot => ({
-      days: this.getWeekdaysBetween(slot.startDate, slot.endDate),
+      days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday" , "Saturday"  , "Sunday"],
       startTime: slot.startTime,
       endTime: slot.endTime
     }));
@@ -87,7 +87,6 @@ class CalcomService {
     const schedulePayload = {
       name: `${title} Schedule`,
       availability,
-      overrides,
       timeZone: "Asia/Kolkata",
       isDefault: false
     };
@@ -107,7 +106,19 @@ class CalcomService {
       slug: generateSlug(slug || title),
       description,
       lengthInMinutes: length,
-      scheduleId
+      seats: {
+        seatsPerTimeSlot: 100,
+        showAttendeeInfo : true,
+        showAvailabilityCount : true
+      },
+      scheduleId,
+      locations: [
+         {
+          type: "integration",
+          integration: "google-meet",
+          label: "Google Meet"
+        }
+      ],
     };
 
     const eventTypeRes = await this.makeAuthenticatedRequest(
@@ -116,28 +127,35 @@ class CalcomService {
       eventTypePayload
     );
     const eventType = eventTypeRes.data;
+    console.log("Event type:", eventType.id);
 
     // 4. Build booking URL
     const username = "atul-tiwari-lvo2sr"; // TODO: make dynamic per user
     const bookingUrl = `https://cal.com/${username}/${eventType.slug}`;
+    console.log("Booking URL:", bookingUrl);
 
     // 5. Insert multiple session rows in DB (one per slot)
-    const sessionRecords = slots.map(slot => ({
+    const sessionRecords = {
       title,
       slug: eventType.slug,
       description,
-      start_date: slot.startDate,
-      end_date: slot.endDate,
-      start_time: slot.startTime,
-      end_time: slot.endTime,
       cal_event_type_id: eventType.id,
       duration: length,
       docebo_user_id: user_id,
       username,
       booking_url: bookingUrl
-    }));
+    };
 
-    await db("sessions").insert(sessionRecords);
+    const insertedSessionIds = await db('sessions').insert(sessionRecords);
+    console.log("Inserted session IDs:", insertedSessionIds[0]);
+    const slotRecords = slots.map((slot, idx) => ({
+      session_id: insertedSessionIds[0],
+      start_date: slot.startDate,
+      end_date: slot.endDate,
+      start_time: slot.startTime,
+      end_time: slot.endTime
+    }));
+    await db('session_slots').insert(slotRecords);
 
     return {
       ...eventType,
@@ -238,32 +256,46 @@ class CalcomService {
   
     if (sessions.length === 0) return [];
   
-    const eventTypeIds = sessions.map(s => s.cal_event_type_id).join(",");
+    // 2. Get all slots for these sessions
+    const sessionIds = sessions.map(s => s.id);
+    const slots = await db("session_slots")
+      .whereIn("session_id", sessionIds)
+      .select("*");
   
+    // 3. Group slots by session_id
+    const slotsBySession = {};
+    for (const slot of slots) {
+      if (!slotsBySession[slot.session_id]) slotsBySession[slot.session_id] = [];
+      slotsBySession[slot.session_id].push(slot);
+    }
+  
+    // 4. Get participant counts
+    const eventTypeIds = sessions.map(s => s.cal_event_type_id).join(",");
     const bookingsRes = await this.makeAuthenticatedRequest(
       "get",
       `/v2/bookings?take=100&eventTypeIds=${encodeURIComponent(eventTypeIds)}`
     );
-  
     const bookings = bookingsRes.data.bookings;
-  
     const bookingCounts = bookings.reduce((acc, b) => {
-      const attendeeCount = b.attendees ? b.attendees.length : 0;      
+      const attendeeCount = b.attendees ? b.attendees.length : 0;
       acc[b.eventType.id] = (acc[b.eventType.id] || 0) + attendeeCount;
       return acc;
     }, {});
-
-    
   
+    // 5. Merge slots into sessions
     return sessions.map(session => ({
       ...session,
+      slots: slotsBySession[session.id] || [],
       total_participants: bookingCounts[session.cal_event_type_id] || 0,
       status: getSessionStatus(session)
     }));
   }
 
   async getSessionById(id) {
-    return db('sessions').where({ id }).first();
+    const session = await db('sessions').where({ id }).first();
+    if (!session) return null;
+    const slots = await db('session_slots').where({ session_id: id });
+    return { ...session, slots };
   }
 
   async updateSession(id, updates) {
@@ -287,10 +319,7 @@ class CalcomService {
     }
 
     updates.duration = updates.length;
-    updates.start_date = updates.startDate;
-    updates.end_date = updates.endDate;
-    updates.start_time = updates.startTime;
-    updates.end_time = updates.endTime;
+   
     delete updates.user_id;
     delete updates.length;
     delete updates.startDate;
@@ -300,6 +329,19 @@ class CalcomService {
     delete updates.slots;
   
     await db("sessions").where({ id }).update(updates);
+
+     if (updates.slots && updates.slots.length > 0) {
+      // Update session_slots table: delete old slots and insert new ones
+      await db("session_slots").where({ session_id: id }).del();
+      const slotRecords = updates.slots.map(slot => ({
+        session_id: id,
+        start_date: slot.startDate,
+        end_date: slot.endDate,
+        start_time: slot.startTime,
+        end_time: slot.endTime
+      }));
+      await db("session_slots").insert(slotRecords);
+    }
   
     return this.getSessionById(id);
   }
@@ -321,7 +363,10 @@ class CalcomService {
       }
     }
   
+    await db("session_slots").where({ session_id: id }).del();
+
     await db("sessions").where({ id }).del();
+
     return true;
   }
 
