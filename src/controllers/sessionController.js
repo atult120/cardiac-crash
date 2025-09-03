@@ -14,7 +14,8 @@ async function createSessions(req, res) {
 async function listSessions(req, res) {
   try {
     const { user_id } = req.query;
-    const sessions = await calcomService.getSessions(user_id);
+    const token = req.headers.authorization?.split(' ')[1];
+    const sessions = await calcomService.getSessions(user_id, token);
     res.json({ success: true, data: sessions });
   } catch (err) {
     console.error(err);

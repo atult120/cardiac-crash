@@ -226,13 +226,17 @@ class DoceboService {
     const total_completed = enrolledCourses.filter(c => c.status === 'completed').length;
     const total_in_progress = enrolledCourses.filter(c => c.status === 'in_progress').length;
 
-      return {
-        courses: enrolledCourses,
-        summary: {
-          total_courses,
-          total_completed,
-          total_in_progress,
-        }
+    const onboardingCourses = enrolledCourses.filter(c => c.title.toLowerCase().includes('onboarding'));
+    const is_onboarding_course_completed = onboardingCourses.every(c => c.status === 'completed');
+
+    return {
+      courses: enrolledCourses,
+      summary: {
+        total_courses,
+        total_completed,
+        total_in_progress,
+        is_onboarding_course_completed
+      }
     };
   }
 

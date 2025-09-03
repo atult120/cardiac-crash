@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config/config');
 const { AppError } = require('../utils/errorHandler');
 const db = require('../database/db');
+const doceboService = require('./doceboService');
 
 class CalcomService {
   constructor() {
@@ -173,7 +174,7 @@ class CalcomService {
   // ------------------
   // 📌 Session Management
   // ------------------
-  async getSessions(userId) {
+  async getSessions(userId , token) {
     // 1. Get sessions from DB
     const sessions = await db("sessions")
       .where({ docebo_user_id: userId })
@@ -207,12 +208,14 @@ class CalcomService {
       return acc;
     }, {});
   
+    const {summary} = await doceboService.getCourses({}, token);
     // 5. Merge slots into sessions
     return sessions.map(session => ({
       ...session,
       slots: slotsBySession[session.id] || [],
       total_participants: bookingCounts[session.cal_event_type_id] || 0,
-      status: getSessionStatus(session)
+      status: getSessionStatus(session),
+      is_course_completed: summary.is_onboarding_course_completed
     }));
   }
 
