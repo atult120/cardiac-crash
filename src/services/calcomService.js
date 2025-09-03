@@ -179,8 +179,15 @@ class CalcomService {
     const sessions = await db("sessions")
       .where({ docebo_user_id: userId })
       .select("*");
+
+    const {summary} = await doceboService.getCourses({}, token);
+ 
   
-    if (sessions.length === 0) return [];
+    if (sessions.length === 0)  {
+       return {
+        is_onboarding_course_completed: summary.is_onboarding_course_completed
+       }
+    }
   
     // 2. Get all slots for these sessions
     const sessionIds = sessions.map(s => s.id);
@@ -208,15 +215,18 @@ class CalcomService {
       return acc;
     }, {});
   
-    const {summary} = await doceboService.getCourses({}, token);
     // 5. Merge slots into sessions
-    return sessions.map(session => ({
+    const sessionsWithSlots = sessions.map(session => ({
       ...session,
       slots: slotsBySession[session.id] || [],
       total_participants: bookingCounts[session.cal_event_type_id] || 0,
       status: getSessionStatus(session),
-      is_course_completed: summary.is_onboarding_course_completed
     }));
+
+    return {
+      sessions: sessionsWithSlots,
+      is_onboarding_course_completed: summary.is_onboarding_course_completed
+    }
   }
 
   async getSessionById(id) {
