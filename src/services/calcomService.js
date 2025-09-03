@@ -73,17 +73,10 @@ class CalcomService {
     // // 1. Convert slots into availability blocks with weekdays
     const availability = slots.map(slot => ({
       days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday" , "Saturday"  , "Sunday"],
-      startTime: slot.startTime,
-      endTime: slot.endTime
+      startTime: slot.start_time,
+      endTime: slot.end_time
     }));
 
-    // const overrides = slots.map(slot => ({
-    //   date: slot.startDate,
-    //   startTime: slot.startTime,
-    //   endTime: slot.endTime
-    // }));
-
-    // 2. Create schedule in Cal.com
     const schedulePayload = {
       name: `${title} Schedule`,
       availability,
@@ -119,7 +112,7 @@ class CalcomService {
       ],
       bookingWindow: {
         type: "range",
-        value : [slots[0].startDate, slots[slots.length - 1].endDate]
+        value : [slots[0].start_date, slots[slots.length - 1].end_date]
       },
       bookingFields: [
         {
@@ -164,10 +157,10 @@ class CalcomService {
     const insertedSessionIds = await db('sessions').insert(sessionRecords);
     const slotRecords = slots.map((slot, idx) => ({
       session_id: insertedSessionIds[0],
-      start_date: slot.startDate,
-      end_date: slot.endDate,
-      start_time: slot.startTime,
-      end_time: slot.endTime
+      start_date: slot.start_date,
+      end_date: slot.end_date,
+      start_time: slot.start_time,
+      end_time: slot.end_time
     }));
     await db('session_slots').insert(slotRecords);
 
@@ -254,7 +247,7 @@ class CalcomService {
     if (updates.slots && updates.slots.length > 0) {
       eventTypePayload.bookingWindow = {
         type: "range",
-        value : [updates.slots[0].startDate, updates.slots[updates.slots.length - 1].endDate]
+        value : [updates.slots[0].start_date, updates.slots[updates.slots.length - 1].end_date]
       };
     }
 
@@ -272,10 +265,10 @@ class CalcomService {
    
     delete updates.user_id;
     delete updates.length;
-    delete updates.startDate;
-    delete updates.endDate;
-    delete updates.startTime;
-    delete updates.endTime;
+    delete updates.start_date;
+    delete updates.end_date;
+    delete updates.start_time;
+    delete updates.end_time;
     delete updates.slots;
   
     await db("sessions").where({ id }).update(updates);
@@ -285,10 +278,10 @@ class CalcomService {
       await db("session_slots").where({ session_id: id }).del();
       const slotRecords = updates.slots.map(slot => ({
         session_id: id,
-        start_date: slot.startDate,
-        end_date: slot.endDate,
-        start_time: slot.startTime,
-        end_time: slot.endTime
+        start_date: slot.start_date,
+        end_date: slot.end_date,
+        start_time: slot.start_time,
+        end_time:slot.end_time
       }));
       await db("session_slots").insert(slotRecords);
     }
@@ -395,3 +388,4 @@ function getSessionStatus(session) {
 
 
 module.exports = new CalcomService();
+
