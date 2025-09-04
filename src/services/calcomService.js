@@ -97,7 +97,7 @@ class CalcomService {
       title,
       slug: generateSlug(slug || title),
       description,
-      lengthInMinutes: 60,
+      lengthInMinutes: length,
       scheduleId,
       seats: {
         seatsPerTimeSlot: 100,
