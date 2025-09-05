@@ -1,4 +1,5 @@
 const axios = require('axios');
+const crypto = require('crypto');
 const config = require('../config/config');
 const { AppError } = require('../utils/errorHandler');
 
@@ -48,9 +49,6 @@ class DoceboService {
         scope: 'api',
       });
 
-      console.log('OAuth request params:', params.toString());
-      console.log('OAuth endpoint:', `${config.docebo.baseUrl}/oauth2/token`);
-
       // Make OAuth request
       const response = await axios.post(
         `${config.docebo.baseUrl}/oauth2/token`,
@@ -60,8 +58,6 @@ class DoceboService {
         }
       );
 
-      console.log('OAuth response status:', response.status);
-      console.log('OAuth response data:', JSON.stringify(response.data));
 
       // Return just the access token
       if (!response.data.access_token) {
@@ -162,8 +158,6 @@ class DoceboService {
       // Add data or params if provided
       if (data) config.data = data;
       if (params) config.params = params;
-      console.log('configParams',params);
-      
       // Make the request
       return this.client(config);
     } catch (error) {
@@ -266,6 +260,167 @@ class DoceboService {
   async getCourseDownloadUrl(courseId) {
     const resp = await this.makeAuthenticatedRequest('get', `/learn/v1/courses/${courseId}/los`);
     return resp.data;
+  }
+
+  async getUserById(userId) {
+    try {
+      const adminToken = await this.getAccessToken();
+      
+      // First try to get user by ID directly
+      try {
+        const directResponse = await this.makeAuthenticatedRequest(
+          'get',
+          `/manage/v1/user/${userId}`,
+          null,
+          null,
+          adminToken
+        );
+        
+        if (directResponse.data) {
+          return directResponse.data;
+        }
+      } catch (directError) {
+        // If direct ID lookup fails, try search by ID
+        console.log('Direct ID lookup failed, trying search method...');
+      }
+      
+      // Fallback: Search for user by ID
+      const searchResponse = await this.makeAuthenticatedRequest(
+        'get', 
+        '/manage/v1/user', 
+        null, 
+        { search_text: userId },
+        adminToken
+      );
+      
+      if (searchResponse.data?.items?.length > 0) {
+        return searchResponse.data.items[0];
+      }
+      
+      throw new Error('User not found');
+    } catch (error) {
+      console.error('Error getting user by ID:', error);
+      throw new AppError('User not found', 404);
+    }
+  }
+
+  async getUserAccessToken(userId) {
+    try {
+      // This would typically involve getting user credentials
+      // For now, we'll use the admin token approach
+      // In a real implementation, you might store user credentials securely
+      return await this.getAccessToken();
+    } catch (error) {
+      console.error('Error getting user access token:', error);
+      throw new AppError('Failed to get user access token', 500);
+    }
+  }
+
+  // Docebo Dashboard Redirection Methods
+  async checkUserExistsInDocebo(identifier) {
+    try {
+      const adminToken = await this.getAccessToken();
+      
+      // First try to get user by ID directly
+      try {
+        const directResponse = await this.makeAuthenticatedRequest(
+          'get',
+          `/manage/v1/user/${identifier}`,
+          null,
+          null,
+          adminToken
+        );
+        
+        if (directResponse.data) {
+          const user = directResponse.data.user_data;
+          return {
+            exists: true,
+            user: {
+              user_id: user.user_id,
+              username: user.username,
+              email: user.email,
+              firstname: user.first_name,
+              lastname: user.last_name,
+              status: user.status,
+              additional_fields: directResponse.data.additional_fields
+            }
+          };
+        }
+      } catch (directError) {
+        // If direct ID lookup fails, try search by email or username
+        console.log('Direct ID lookup failed, trying search method...');
+      }
+      
+      return {
+        exists: false,
+        user: null
+      };
+    } catch (error) {
+      console.error('Error checking user existence in Docebo:', error);
+      throw new AppError('Failed to check user existence in Docebo', 500);
+    }
+  }
+
+  async generateDoceboRedirectUrl(userId, redirectPath = null) {
+    try {
+      // First verify the user exists
+      const userCheck = await this.checkUserExistsInDocebo(userId);
+      
+      if (!userCheck.exists) {
+        throw new AppError('User not found in Docebo', 404);
+      }
+
+      // Generate Docebo SSO token using MD5 hash
+      const ssoToken = await this.generateDoceboSSOToken(userCheck.user.username);
+      
+      // Construct Docebo SSO URL that bypasses login page
+      const baseUrl = config.docebo.baseUrl;
+      const path = redirectPath || '/lms';
+      
+      // Use Docebo's official SSO endpoint format
+      // Based on Docebo documentation: /lms/index.php?r=site/sso&login_user=username&time=timestamp&token=md5hash
+      // URL encode the username to handle special characters
+      const encodedUsername = encodeURIComponent(ssoToken.username);
+      const redirectUrl = `${baseUrl}/lms/index.php?r=site/sso&` +
+        `login_user=${encodedUsername}&` +
+        `time=${ssoToken.time}&` +
+        `token=${ssoToken.token}`;
+      
+      return {
+        redirectUrl
+      };
+    } catch (error) {
+      console.error('Error generating Docebo redirect URL:', error);
+      throw error;
+    }
+  }
+
+  async generateDoceboSSOToken(username) {
+    try {
+      // Get current UTC time in seconds
+      const currentTime = Math.floor(Date.now() / 1000);
+      
+      // Use Docebo SSO secret (must be configured in Docebo admin panel)
+      const ssoSecret = config.docebo.ssoSecret;
+      
+      if (!ssoSecret) {
+        throw new Error('SSO secret not configured. Please set DOCEBO_SSO_SECRET in your environment variables.');
+      }
+      
+      // Create MD5 hash of: username,time,secret (comma-separated as per Docebo docs)
+      const hashString = `${username.toLowerCase()},${currentTime},${ssoSecret}`;
+      const token = crypto.createHash('md5').update(hashString).digest('hex');
+      
+      return {
+        token,
+        time: currentTime,
+        username: username.toLowerCase(),
+        hashString // For debugging
+      };
+    } catch (error) {
+      console.error('Error generating Docebo SSO token:', error);
+      throw new AppError('Failed to generate Docebo SSO token', 500);
+    }
   }
 }
 

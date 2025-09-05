@@ -8,6 +8,8 @@ module.exports = {
     redirectUri: process.env.REDIRECT_URI,
     username: process.env.DOCEBO_USERNAME,
     password: process.env.DOCEBO_PASSWORD,
+    // SSO Configuration
+    ssoSecret: process.env.DOCEBO_SSO_SECRET,
   },
   db : {
     host : process.env.DB_HOST,
