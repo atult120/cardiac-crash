@@ -11,4 +11,7 @@ router.put('/:id', userController.updateUser);
 router.delete('/:id', userController.deleteUser);
 router.get('/:id/enrollments', userController.getUserEnrollments);
 
+// Docebo Dashboard Redirection Routes
+router.get('/:userId/docebo-sso', userController.redirectToDocebo);
+
 module.exports = router;

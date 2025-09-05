@@ -135,3 +135,31 @@ exports.refreshToken = async (req, res, next) => {
     next(error);
   }
 };
+
+
+
+exports.redirectToDocebo = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { redirectPath } = req.query;
+    
+    // Validate input
+    if (!userId) {
+      return next(new AppError('Please provide user ID', 400));
+    }
+    
+    // Generate Docebo dashboard URL
+    const result = await doceboService.generateDoceboRedirectUrl(userId, redirectPath);
+      
+    res.status(200).json({
+      status: 'success',
+      data: result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
+
+
